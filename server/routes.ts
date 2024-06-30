@@ -1,43 +1,24 @@
 import express from "express";
-import { createHash, createSign, createVerify, generateKeyPairSync } from "crypto";
 import { currentData, updateCurrentData, updateBackupData } from "./fixtures/database";
 import authenticateToken from "./middleware/authenticateToken";
 import { DataRecord } from "./types";
+import { generateHash, signData, verifySignature } from "./utils/crypto";
 
 const router = express.Router();
 
-const { publicKey, privateKey } = generateKeyPairSync("rsa", {
-  modulusLength: 2048,
-});
-
-const generateHash = (data: string): string => {
-  return createHash('sha256').update(data).digest('hex');
-};
-
-const signData = (data: string): string => {
-  const sign = createSign("SHA256");
-  sign.update(data).end();
-  return sign.sign(privateKey, "hex");
-};
-
-const verifySignature = (data: string, signature: string): boolean => {
-  const verify = createVerify("SHA256");
-  verify.update(data);
-  return verify.verify(publicKey, signature, "hex");
-};
-
-router.get("/", authenticateToken, (req, res) => {
+router.get("/", authenticateToken, (req: express.Request, res: express.Response) => {
   res.json(currentData);
 });
 
-router.post("/", authenticateToken, (req, res) => {
+router.post("/", authenticateToken, (req: express.Request, res: express.Response) => {
   const { data } = req.body;
+
   if (!data) {
     return res.status(400).json({ message: "Data is required" });
   }
 
-  const hash = generateHash(data);
-  const signature = signData(hash);
+  const hash = generateHash({ data });
+  const signature = signData({ data });
 
   const newData: DataRecord = { data, hash, signature };
   updateCurrentData(newData);
@@ -46,10 +27,10 @@ router.post("/", authenticateToken, (req, res) => {
   res.sendStatus(200);
 });
 
-router.post("/verify", authenticateToken, (req, res) => {
+router.post("/verify", authenticateToken, (req: express.Request, res: express.Response) => {
   const { data, hash, signature } = currentData;
-  const currentHash = generateHash(data);
-  const valid = currentHash === hash && verifySignature(hash, signature);
+  const currentHash = generateHash({ data });
+  const valid = currentHash === hash && verifySignature({ data, signature });
   res.json({ valid });
 });
 
