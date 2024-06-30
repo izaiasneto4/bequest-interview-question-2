@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchData, updateData, verifyData } from "./api/dataService";
-
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
-const AUTH_TOKEN = `Bearer ${process.env.REACT_APP_SECRET_KEY || "my_secret_key"}`;
+import { fetchData, updateData, verifyData } from "./api/dataService.ts";
 
 const App: React.FC = () => {
   const [data, setData] = useState<string>("");
