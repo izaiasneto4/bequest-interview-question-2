@@ -1,70 +1,95 @@
 import React, { useEffect, useState } from "react";
+import { fetchData, updateData, verifyData } from "./api/dataService";
 
-const API_URL = "http://localhost:8080";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
+const AUTH_TOKEN = `Bearer ${process.env.REACT_APP_SECRET_KEY || "my_secret_key"}`;
 
-function App() {
-  const [data, setData] = useState<string>();
+const App: React.FC = () => {
+  const [data, setData] = useState<string>("");
+  const [isValid, setIsValid] = useState<boolean | null>(null);
 
   useEffect(() => {
     getData();
   }, []);
 
   const getData = async () => {
-    const response = await fetch(API_URL);
-    const { data } = await response.json();
-    setData(data);
+    try {
+      const data = await fetchData();
+      setData(data);
+      setIsValid(null);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
   };
 
-  const updateData = async () => {
-    await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ data }),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    await getData();
+  const handleUpdateData = async () => {
+    try {
+      await updateData(data);
+      await getData();
+    } catch (error) {
+      console.error("Error updating data:", error);
+    }
   };
 
-  const verifyData = async () => {
-    throw new Error("Not implemented");
+  const handleVerifyData = async () => {
+    try {
+      const valid = await verifyData();
+      setIsValid(valid);
+    } catch (error) {
+      console.error("Error verifying data:", error);
+    }
   };
 
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        position: "absolute",
-        padding: 0,
-        justifyContent: "center",
-        alignItems: "center",
-        flexDirection: "column",
-        gap: "20px",
-        fontSize: "30px",
-      }}
-    >
-      <div>Saved Data</div>
+    <div style={styles.container}>
+      <h1>Saved Data</h1>
       <input
-        style={{ fontSize: "30px" }}
+        style={styles.input}
         type="text"
         value={data}
         onChange={(e) => setData(e.target.value)}
       />
-
-      <div style={{ display: "flex", gap: "10px" }}>
-        <button style={{ fontSize: "20px" }} onClick={updateData}>
+      <div style={styles.buttonContainer}>
+        <button style={styles.button} onClick={handleUpdateData}>
           Update Data
         </button>
-        <button style={{ fontSize: "20px" }} onClick={verifyData}>
+        <button style={styles.button} onClick={handleVerifyData}>
           Verify Data
         </button>
       </div>
+      {isValid !== null && (
+        <div style={{ ...styles.message, color: isValid ? "green" : "red" }}>
+          {isValid ? "Data is valid" : "Data has been tampered with"}
+        </div>
+      )}
     </div>
   );
-}
+};
+
+const styles = {
+  container: {
+    width: "100vw",
+    height: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "column" as const,
+    gap: "20px",
+    fontSize: "30px",
+  },
+  input: {
+    fontSize: "30px",
+  },
+  buttonContainer: {
+    display: "flex",
+    gap: "10px",
+  },
+  button: {
+    fontSize: "20px",
+  },
+  message: {
+    fontSize: "20px",
+  },
+};
 
 export default App;
