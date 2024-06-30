@@ -15,7 +15,8 @@ interface AuthenticateTokenParams {
  * @param {express.NextFunction} next - The next middleware function.
  * @return {void} This function does not return anything.
  */
-const authenticateToken = ({ req, res, next }: AuthenticateTokenParams): void => {
+const authenticateToken = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   const secretKey = process.env.SECRET_KEY || "default_secret_key";
